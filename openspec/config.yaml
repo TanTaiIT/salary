@@ -1,0 +1,45 @@
+schema: spec-driven
+
+# Ràng buộc cho mọi lần tạo proposal, specs, design, tasks, apply, archive.
+# Chỉ ghi những điều AI không tự suy ra được khi đọc code. Đặc tả sản phẩm đầy đủ ở docs/spec.md.
+context: |
+  Sản phẩm: Lịch Lương Hàn Quốc, app chấm công và tính lương cho người Việt làm việc tại Hàn Quốc.
+  Đặc tả sản phẩm, lộ trình và các quyết định đã chốt nằm trong docs/spec.md; đọc mục liên quan trước khi lên kế hoạch.
+  Repo này CHỈ là server API (Node.js thuần, không framework, MongoDB). App React Native ở repo riêng:
+  không lên kế hoạch code app ở đây, nhưng phải nêu ảnh hưởng đến app khi đổi API, src/payroll hoặc src/schemas.
+  src/payroll và src/schemas được chép nguyên sang app: chỉ được import lẫn nhau và zod,
+  không dùng node:*, thư viện chỉ chạy trên server, hay code khác trong src/.
+  API có phiên bản /v1; app cũ vẫn chạy ngoài thực tế nên không được đổi hành vi /v1 theo kiểu phá vỡ tương thích.
+  Bất biến nghiệp vụ: tiền là số nguyên won, chỉ bỏ phần lẻ (절사) ở bước cuối; ngày là chuỗi "YYYY-MM-DD" giờ Hàn Quốc,
+  không dùng kiểu Date; giờ là bội số 0,5 và tổng một ngày không quá 24; mỗi ngày công giữ wageSnapshot;
+  quy định theo năm (lương tối thiểu, ngày lễ, điều kiện 주휴수당) nằm trong database, không viết cứng.
+  Bảo mật: mọi truy vấn lọc theo userId lấy từ token, không bao giờ từ body hay query; xóa luôn là xóa mềm.
+  Đồng bộ: updatedAt là giờ máy người dùng (bản sửa mới nhất thắng), serverUpdatedAt là mốc kéo dữ liệu.
+  Đi đúng thứ tự lộ trình trong docs/spec.md; không kéo tính năng của giai đoạn sau vào nếu người dùng không yêu cầu.
+  Ngoài phạm vi: quyết toán thuế cuối năm, tự xác định hệ số tăng ca, phần mềm trả lương cho doanh nghiệp.
+  Viết mọi artifact bằng tiếng Việt, nhưng giữ nguyên từ khóa và tiêu đề của OpenSpec
+  (## ADDED Requirements, ### Requirement:, #### Scenario:, SHALL/MUST, WHEN/THEN).
+
+rules:
+  proposal:
+    - Ghi rõ thay đổi thuộc giai đoạn nào trong lộ trình của docs/spec.md
+    - Có mục "Ngoài phạm vi" liệt kê những gì cố ý không làm
+    - Có mục "Ảnh hưởng đến app" (API, src/payroll, src/schemas cần chép lại) hoặc ghi "Không ảnh hưởng"
+  specs:
+    - Requirement của route API có ít nhất một scenario lỗi, nêu mã HTTP và error.code
+    - Scenario tính tiền ghi số cụ thể (giờ, lương giờ, kết quả bằng won)
+  design:
+    - Không thêm thư viện mới nếu chưa nêu lý do và phương án không dùng thư viện
+    - Nêu index MongoDB cần thêm hoặc đổi, nếu có
+  tasks:
+    - Mỗi task đổi hành vi có task viết test node:test đi kèm
+    - Task cuối luôn là chạy pnpm test và pnpm typecheck
+
+operations:
+  apply:
+    guidance:
+      - Chạy pnpm test và pnpm typecheck trước khi đánh dấu xong một nhóm task
+      - Khi thêm hoặc đổi route, cập nhật bảng "API hiện có" trong README.md
+  archive:
+    guidance:
+      - Nếu thay đổi làm lệch nội dung docs/spec.md, cập nhật docs/spec.md trong cùng lần archive

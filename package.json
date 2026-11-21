@@ -1,5 +1,6 @@
 {
-  "name": "llhq",
+  "name": "llhq-api",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.21.0",
@@ -7,10 +8,19 @@
     "node": ">=26.13.0"
   },
   "scripts": {
-    "dev": "pnpm --filter @llhq/api dev",
-    "start": "pnpm --filter @llhq/api start",
-    "test": "pnpm -r test",
+    "dev": "node --watch --env-file-if-exists=.env src/server.ts",
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "seed": "node --env-file-if-exists=.env scripts/seed-rules.ts",
+    "seed:config": "node --env-file-if-exists=.env scripts/seed-config.ts",
+    "migrate": "node --env-file-if-exists=.env scripts/migrate.ts",
+    "set-role":"node --env-file-if-exists=.env scripts/set-role.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "jose": "^6.2.17",
+    "mongodb": "^7.9.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
