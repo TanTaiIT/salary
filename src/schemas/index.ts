@@ -81,6 +81,18 @@ export const WeeklyHolidayPayChange = z.object({
 });
 export type WeeklyHolidayPayChange = z.infer<typeof WeeklyHolidayPayChange>;
 
+/**
+ * Cài đặt của người dùng được giữ trên server để đổi máy không mất.
+ * Chế độ màu, nơi làm đang chọn là lựa chọn riêng từng máy nên không đồng bộ.
+ */
+export const UserSettingsInput = z.object({
+  /** Tỉ lệ khấu trừ để ước tính lương thực nhận, phần trăm, bước 0,1 (0 = không khấu trừ) */
+  deductRate: z.number().min(0).max(100).multipleOf(0.1, 'Tỉ lệ khấu trừ chỉ có một chữ số thập phân'),
+  /** Thời điểm sửa trên máy; bản sửa mới nhất thắng */
+  updatedAt: z.iso.datetime(),
+});
+export type UserSettingsInput = z.infer<typeof UserSettingsInput>;
+
 export const SyncRequest = z.object({
   /** serverTime nhận được ở lần đồng bộ trước; null ở lần đầu */
   since: z.iso.datetime().nullable(),
@@ -91,6 +103,8 @@ export const SyncRequest = z.object({
   weeklyHolidayPays: z.array(WeeklyHolidayPayChange).max(500).default([]),
   /** Lần mở app đầu tiên trên máy; server giữ giá trị sớm nhất */
   firstOpenAt: z.iso.datetime().optional(),
+  /** Cài đặt đã sửa trên máy từ lần đồng bộ trước; không gửi nếu không đổi */
+  settings: UserSettingsInput.optional(),
 });
 export type SyncRequest = z.infer<typeof SyncRequest>;
 

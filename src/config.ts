@@ -23,6 +23,8 @@ const Env = z.object({
   APPLE_CLIENT_IDS: CsvList,
   /** Client id OAuth của app iOS, Android, web (aud trong id token Google) */
   GOOGLE_CLIENT_IDS: CsvList,
+  /** Origin được gọi API từ trình duyệt (bản web của app); "*" là mọi origin; để trống là tắt CORS */
+  CORS_ORIGINS: CsvList,
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
@@ -46,6 +48,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     trustProxy: e.TRUST_PROXY,
     logLevel: e.LOG_LEVEL,
     socialLogin: { apple: e.APPLE_CLIENT_IDS, google: e.GOOGLE_CLIENT_IDS },
+    corsOrigins: e.CORS_ORIGINS,
   };
 }
 

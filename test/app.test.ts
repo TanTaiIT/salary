@@ -1,7 +1,7 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Collections } from '../src/db/client.ts';
-import { json, startTestServer } from './helpers.ts';
+import { config, json, startTestServer } from './helpers.ts';
 
 describe('HTTP cơ bản', () => {
   let t: Awaited<ReturnType<typeof startTestServer>>;
@@ -114,5 +114,49 @@ describe('Xác thực', () => {
     const res2 = await refresh('xxxxxxxxxxxx');
     assert.equal(res1.status, 401);
     assert.equal(res2.status, 429);
+  });
+});
+
+describe('CORS cho bản web', () => {
+  let t: Awaited<ReturnType<typeof startTestServer>>;
+  before(async () => {
+    t = await startTestServer({ config: { ...config, corsOrigins: ['http://localhost:8081'] } });
+  });
+  after(async () => { await t.close(); });
+
+  test('preflight từ origin được phép trả 204 kèm header CORS', async () => {
+    const res = await fetch(`${t.base}/v1/sync`, {
+      method: 'OPTIONS',
+      headers: { origin: 'http://localhost:8081', 'access-control-request-method': 'POST' },
+    });
+    assert.equal(res.status, 204);
+    assert.equal(res.headers.get('access-control-allow-origin'), 'http://localhost:8081');
+    assert.match(res.headers.get('access-control-allow-methods') ?? '', /POST/);
+    assert.match(res.headers.get('access-control-allow-headers') ?? '', /authorization/);
+  });
+
+  test('phản hồi thường và phản hồi lỗi đều có header CORS', async () => {
+    const ok = await fetch(`${t.base}/health`, { headers: { origin: 'http://localhost:8081' } });
+    assert.equal(ok.headers.get('access-control-allow-origin'), 'http://localhost:8081');
+    assert.equal(ok.headers.get('access-control-expose-headers'), 'x-request-id');
+    const err = await fetch(`${t.base}/v1/jobs`, { headers: { origin: 'http://localhost:8081' } });
+    assert.equal(err.status, 401);
+    assert.equal(err.headers.get('access-control-allow-origin'), 'http://localhost:8081');
+  });
+
+  test('origin không được phép: không có header CORS, OPTIONS vẫn là 405', async () => {
+    const res = await fetch(`${t.base}/v1/sync`, { method: 'OPTIONS', headers: { origin: 'https://evil.example' } });
+    assert.equal(res.status, 405);
+    assert.equal(res.headers.get('access-control-allow-origin'), null);
+  });
+
+  test('mặc định (CORS_ORIGINS trống) không bật CORS', async () => {
+    const plain = await startTestServer();
+    try {
+      const res = await fetch(`${plain.base}/health`, { headers: { origin: 'http://localhost:8081' } });
+      assert.equal(res.headers.get('access-control-allow-origin'), null);
+    } finally {
+      await plain.close();
+    }
   });
 });

@@ -11,7 +11,16 @@ export interface UserDoc {
   role?: 'user' | 'admin';
   /** Lần mở app sớm nhất trên mọi máy của người dùng, dùng để tính cấp quảng cáo */
   firstSeenAt?: Date;
+  /** Cài đặt đồng bộ giữa các máy; chưa có nghĩa là người dùng chưa đổi lần nào */
+  settings?: UserSettingsDoc;
   createdAt: Date;
+}
+
+export interface UserSettingsDoc {
+  /** Tỉ lệ khấu trừ ước tính lương thực nhận, phần trăm */
+  deductRate: number;
+  /** Thời điểm sửa trên máy người dùng, dùng để giải quyết xung đột */
+  updatedAt: Date;
 }
 
 export interface JobDoc {

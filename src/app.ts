@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Deps } from './deps.ts';
 import { bearerToken } from './lib/auth.ts';
+import { PREFLIGHT_HEADERS, applyCors } from './lib/cors.ts';
 import { HttpError, readJson, send } from './lib/http.ts';
 import type { Ctx } from './lib/router.ts';
 import { buildRouter } from './routes/index.ts';
@@ -30,6 +31,8 @@ export function createApp(deps: Deps) {
 
     const url = new URL(req.url ?? '/', 'http://localhost');
     const ip = clientIp(req, deps.config.trustProxy);
+    // Đặt trước mọi thứ để cả phản hồi lỗi (429, 401…) cũng đọc được từ trình duyệt
+    const corsAllowed = applyCors(req, res, deps.config.corsOrigins);
 
     res.once('finish', () => {
       logger.info('request', {
@@ -45,6 +48,12 @@ export function createApp(deps: Deps) {
       const limit = limiters.global.hit(ip);
       if (!limit.allowed) {
         throw new HttpError(429, 'rate_limited', 'Gửi quá nhiều yêu cầu, thử lại sau ít phút');
+      }
+
+      // Preflight của trình duyệt; origin không được phép thì đi tiếp và nhận 405 như trước
+      if (req.method === 'OPTIONS' && corsAllowed) {
+        send(res, { status: 204, headers: { ...PREFLIGHT_HEADERS } });
+        return;
       }
 
       const match = router.match(req.method ?? 'GET', url.pathname);

@@ -402,4 +402,97 @@ describe('Tích hợp MongoDB', { skip }, () => {
       assert.equal(seen.size, 2_300);
     });
   });
+
+  describe('Tài khoản và cài đặt', () => {
+    const settings = (deductRate: number, updatedAt: string) => ({ deductRate, updatedAt: iso(updatedAt) });
+
+    test('GET /v1/me: tên, cách đăng nhập, firstOpenAt; chưa có cài đặt thì settings = null', async () => {
+      const u = await newUser({ firstSeenAt: new Date('2026-03-01T00:00:00Z') });
+      const res = await call('GET', '/v1/me', u.token);
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body, {
+        id: u.id,
+        name: 'Test',
+        provider: 'dev',
+        firstOpenAt: iso('2026-03-01T00:00:00Z'),
+        settings: null,
+      });
+      assert.equal((await call('GET', '/v1/me')).status, 401);
+    });
+
+    test('PUT /v1/me/settings: ghi mới, bản cũ hơn là 409 stale_update kèm bản server, dữ liệu sai là 422', async () => {
+      const u = await newUser();
+      const first = await call('PUT', '/v1/me/settings', u.token, settings(3.3, '2026-11-20T10:00:00Z'));
+      assert.equal(first.status, 200);
+      assert.deepEqual(first.body, settings(3.3, '2026-11-20T10:00:00Z'));
+
+      const older = await call('PUT', '/v1/me/settings', u.token, settings(9.4, '2026-11-20T09:00:00Z'));
+      assert.equal(older.status, 409);
+      assert.equal(older.body.error.code, 'stale_update');
+      assert.deepEqual(older.body.error.details, settings(3.3, '2026-11-20T10:00:00Z'));
+
+      // Cùng updatedAt cũng giữ bản server, như ngày công
+      assert.equal((await call('PUT', '/v1/me/settings', u.token, settings(0, '2026-11-20T10:00:00Z'))).status, 409);
+
+      const bad = await call('PUT', '/v1/me/settings', u.token, settings(3.33, '2026-11-21T00:00:00Z'));
+      assert.equal(bad.status, 422);
+      assert.equal(bad.body.error.details[0].path, 'deductRate');
+
+      assert.deepEqual((await call('GET', '/v1/me', u.token)).body.settings, settings(3.3, '2026-11-20T10:00:00Z'));
+    });
+
+    test('đồng bộ cài đặt giữa hai máy qua /v1/sync', async () => {
+      const u = await newUser();
+      // Máy A đổi sang thuế 3,3%
+      const a = await sync(u.token, { settings: settings(3.3, '2026-11-20T10:00:00Z') });
+      assert.equal(a.status, 200);
+      assert.equal(a.body.settingsResult, 'applied');
+      assert.deepEqual(a.body.settings, settings(3.3, '2026-11-20T10:00:00Z'));
+
+      // Máy B sửa trước đó (offline) rồi mới đồng bộ: bản của máy A thắng, máy B nhận về bản của A
+      const b = await sync(u.token, { settings: settings(9.4, '2026-11-20T08:00:00Z') });
+      assert.equal(b.body.settingsResult, 'stale');
+      assert.deepEqual(b.body.settings, settings(3.3, '2026-11-20T10:00:00Z'));
+
+      // Gói không có settings vẫn nhận bản hiện có
+      const c = await sync(u.token, {});
+      assert.equal(c.body.settingsResult, null);
+      assert.deepEqual(c.body.settings, settings(3.3, '2026-11-20T10:00:00Z'));
+    });
+
+    test('người dùng chưa có cài đặt thì sync trả settings = null; người khác không bị ảnh hưởng', async () => {
+      const u1 = await newUser();
+      const u2 = await newUser();
+      await sync(u1.token, { settings: settings(9.4, '2026-11-20T10:00:00Z') });
+      const res = await sync(u2.token, {});
+      assert.equal(res.body.settings, null);
+      assert.equal(res.body.settingsResult, null);
+    });
+
+    test('GET /v1/work-days trả payByType trong summary', async () => {
+      const u = await newUser();
+      const jobId = randomUUID();
+      await sync(u.token, {
+        jobs: [jobChange(jobId, iso('2026-11-01T00:00:00Z'))],
+        workDays: [
+          {
+            id: randomUUID(),
+            data: {
+              jobId,
+              date: '2026-11-17',
+              hours: { x1: 6, x1_5: 2, x2: 0, x2_5: 0, x3: 0 },
+              allowance: 10_000,
+              wageSnapshot: 10_320,
+              updatedAt: iso('2026-11-17T12:00:00Z'),
+            },
+            deletedAt: null,
+          },
+        ],
+      });
+      const res = await call('GET', '/v1/work-days?month=2026-11', u.token);
+      assert.equal(res.status, 200);
+      assert.deepEqual(res.body.summary.payByType, { x1: 61_920, x1_5: 30_960, x2: 0, x2_5: 0, x3: 0 });
+      assert.equal(res.body.summary.total, 102_880);
+    });
+  });
 });

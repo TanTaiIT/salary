@@ -2,6 +2,7 @@ import { SyncRequest } from '../schemas/index.ts';
 import { ok, parse } from '../lib/http.ts';
 import type { Router } from '../lib/router.ts';
 import { applyJobChange, jobToSyncApi } from '../services/jobs.ts';
+import { applySettings, settingsToApi } from '../services/settings.ts';
 import { applyWeeklyHolidayPayChange, weeklyToApi } from '../services/weeklyHolidayPays.ts';
 import { userJobIds, applyWorkDayChange, toApi } from '../services/workDays.ts';
 
@@ -39,7 +40,7 @@ const rejectCode =(err: unknown) => (err instanceof Error && 'code' in err ? Str
 
 /**
  * Đồng bộ hai chiều:
- * 1. App đẩy nơi làm việc, ngày công rồi 주휴수당 đã thay đổi kể từ lần trước, cùng firstOpenAt.
+ * 1. App đẩy nơi làm việc, ngày công rồi 주휴수당 đã thay đổi kể từ lần trước, cùng firstOpenAt và cài đặt.
  * 2. Server trả về mọi bản ghi có serverUpdatedAt sau mốc "since",
  *    cùng serverTime để app dùng làm mốc cho lần sau.
  * App nhận lại có thể trùng bản mình vừa gửi; gộp theo id là được.
@@ -85,7 +86,15 @@ export function syncRoutes(r: Router): void {
       const firstOpen = new Date(Math.min(Date.parse(input.firstOpenAt), Date.now()));
       await cols.users.updateOne({ _id: userId }, { $min: { firstSeenAt: firstOpen } });
     }
-    const user = await cols.users.findOne({ _id: userId }, { projection: { firstSeenAt: 1, createdAt: 1 } });
+
+    // Cài đặt: cùng luật bản sửa mới nhất thắng; app luôn nhận lại bản đang có trên server
+    let settingsResult: 'applied' | 'stale' | null = null;
+    if (input.settings) settingsResult = (await applySettings(cols, userId, input.settings)).status;
+
+    const user = await cols.users.findOne(
+      { _id: userId },
+      { projection: { firstSeenAt: 1, createdAt: 1, settings: 1 } },
+    );
 
     const serverTime = new Date();
     const since = input.since ? new Date(input.since) : new Date(0);
@@ -111,6 +120,8 @@ export function syncRoutes(r: Router): void {
       workDays: upTo(workDays).map(toApi),
       weeklyHolidayPays: upTo(weeklyHolidayPays).map(weeklyToApi),
       firstOpenAt: firstSeen?.toISOString() ?? null,
+      settingsResult,
+      settings: settingsToApi(user?.settings),
       hasMore,
     });
   });

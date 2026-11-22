@@ -17,13 +17,13 @@ App React Native nằm ở repo riêng. Đặc tả đầy đủ: [docs/spec.md]
 ```
 src/
   server.ts            khởi động, kết nối MongoDB, tắt an toàn
-  app.ts               xử lý request: request id, rate limit, router, xác thực, lỗi
+  app.ts               xử lý request: request id, CORS, rate limit, router, xác thực, lỗi
   config.ts            đọc và kiểm tra biến môi trường
-  lib/                 router, đọc body, JWT, rate limit, logger
+  lib/                 router, đọc body, JWT, CORS, rate limit, logger
   db/client.ts         kiểu document, collection, index
-  services/            logic ghi ngày công (bản sửa mới nhất thắng)
-  routes/              health, auth, rules, jobs, work-days, sync
-  payroll/             tính lương thuần TypeScript, không phụ thuộc thư viện nào
+  services/            logic ghi nơi làm, ngày công, 주휴수당, cài đặt (bản sửa mới nhất thắng)
+  routes/              health, auth, rules, jobs, work-days, sync, me
+  payroll/             tính lương, thống kê, khấu trừ; thuần TypeScript, không phụ thuộc thư viện nào
   schemas/             schema zod kiểm tra dữ liệu đầu vào
 scripts/seed-rules.ts  nạp quy định năm 2026
 test/                  test API, payroll, schema
@@ -80,11 +80,16 @@ Kiểm tra: `pnpm test` và `pnpm typecheck`.
 | GET, POST | /v1/jobs (POST nhận `id` do app tạo, không bắt buộc) | có |
 | GET | /v1/work-days?month=YYYY-MM&jobId= | có |
 | PUT, DELETE | /v1/work-days/:id | có |
-| POST | /v1/sync | có (nơi làm việc, ngày công, 주휴수당, `firstOpenAt`) |
+| POST | /v1/sync | có (nơi làm việc, ngày công, 주휴수당, `firstOpenAt`, cài đặt) |
+| GET | /v1/me | có (tên, cách đăng nhập, `firstOpenAt`, cài đặt) |
+| PUT | /v1/me/settings | có (mức khấu trừ; bản cũ hơn trả 409 `stale_update`) |
 | DELETE | /v1/me | có |
 | GET | /v1/admin/rules | admin |
 | PUT | /v1/admin/rules/:year | admin |
 | GET | /v1/admin/audit-logs?target=&limit= | admin |
+
+Bản web của app (Expo web) gọi API từ trình duyệt nên cần CORS: đặt `CORS_ORIGINS=http://localhost:8081` khi dev,
+và liệt kê đúng domain web ở production (không nên dùng `*`). App iOS, Android không cần.
 
 Quyền admin đọc từ `users.role` trong database: `pnpm set-role dev <tên> admin`.
 Cấu hình quảng cáo: sửa `scripts/seed-config.ts` rồi chạy `pnpm seed:config`.

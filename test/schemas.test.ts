@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JobInput, SyncRequest, WeeklyHolidayPayInput, WorkDayInput } from '../src/schemas/index.ts';
+import { JobInput, SyncRequest, UserSettingsInput, WeeklyHolidayPayInput, WorkDayInput } from '../src/schemas/index.ts';
 
 const errorPaths = (r: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
   (r.error?.issues ?? []).map((i) => i.path.join('.'));
@@ -73,4 +73,27 @@ test('từ chối gói quá 500 khoản 주휴수당', () => {
   const change = { id: '0b7c7f0e-8a43-4f6b-9a3e-2f1d6c5b4a39', data: weekly, deletedAt: null };
   const r = SyncRequest.safeParse({ since: null, workDays: [], weeklyHolidayPays: Array(501).fill(change) });
   assert.deepEqual(errorPaths(r), ['weeklyHolidayPays']);
+});
+
+test('cài đặt: tỉ lệ khấu trừ bước 0,1 từ 0 đến 100', () => {
+  const at = '2026-11-22T00:00:00.000Z';
+  for (const v of [0, 3.3, 9.4, 100]) assert.equal(UserSettingsInput.safeParse({ deductRate: v, updatedAt: at }).success, true, `${v}`);
+  for (const v of [3.33, -0.1, 100.1]) {
+    assert.deepEqual(errorPaths(UserSettingsInput.safeParse({ deductRate: v, updatedAt: at })), ['deductRate'], `${v}`);
+  }
+  assert.deepEqual(errorPaths(UserSettingsInput.safeParse({ deductRate: 3.3 })), ['updatedAt']);
+});
+
+test('gói đồng bộ nhận settings không bắt buộc', () => {
+  assert.equal(SyncRequest.safeParse({ since: null, workDays: [] }).success, true);
+  const r = SyncRequest.safeParse({
+    since: null,
+    workDays: [],
+    settings: { deductRate: 3.3, updatedAt: '2026-11-22T00:00:00.000Z' },
+  });
+  assert.equal(r.success, true);
+  assert.deepEqual(
+    errorPaths(SyncRequest.safeParse({ since: null, workDays: [], settings: { deductRate: 3.33, updatedAt: '2026-11-22T00:00:00.000Z' } })),
+    ['settings.deductRate'],
+  );
 });
