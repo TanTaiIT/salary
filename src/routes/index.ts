@@ -2,6 +2,7 @@ import { Router } from '../lib/router.ts';
 import { adminRoutes } from './admin.ts';
 import { appConfigRoutes } from './appConfig.ts';
 import { authRoutes } from './auth.ts';
+import { docsRoutes } from './docs.ts';
 import { healthRoutes } from './health.ts';
 import { jobRoutes } from './jobs.ts';
 import { meRoutes } from './me.ts';
@@ -20,5 +21,7 @@ export function buildRouter(env: string): Router {
   syncRoutes(r);
   meRoutes(r);
   adminRoutes(r);
+  // Tài liệu API (Swagger UI) chỉ bật ngoài production, giống dev-login
+  if (env !== 'production') docsRoutes(r);
   return r;
 }

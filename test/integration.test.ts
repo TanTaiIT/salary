@@ -5,6 +5,7 @@ import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { WorkDayDoc } from '../src/db/client.ts';
 import { RateLimiter } from '../src/lib/rateLimit.ts';
+import * as R from '../src/openapi/responses.ts';
 import { openTestDb, SKIP_REASON, type TestDb } from './db.ts';
 import { createFakeIdp } from './fakeIdp.ts';
 import { json, startTestServer } from './helpers.ts';
@@ -400,6 +401,46 @@ describe('Tích hợp MongoDB', { skip }, () => {
         if (!res.body.hasMore) break;
       }
       assert.equal(seen.size, 2_300);
+    });
+  });
+
+  describe('Phản hồi khớp tài liệu OpenAPI', () => {
+    /** Dùng .strict() để bắt cả trường thừa chưa ghi vào tài liệu */
+    const check = (schema: { safeParse(v: unknown): { success: boolean; error?: unknown } }, body: unknown, what: string) => {
+      const r = schema.safeParse(body);
+      assert.ok(r.success, `${what}: ${JSON.stringify(r.error)}`);
+    };
+
+    test('dev-login, refresh, jobs, sync, work-days, me, settings', async () => {
+      const login = await call('POST', '/v1/auth/dev-login', undefined, { name: `oa-${randomUUID().slice(0, 8)}` });
+      check(R.AuthResponse.strict(), login.body, 'dev-login');
+      const token = login.body.accessToken as string;
+      check(R.TokenPairResponse.strict(), (await call('POST', '/v1/auth/refresh', undefined, { refreshToken: login.body.refreshToken })).body, 'refresh');
+
+      const jobId = randomUUID();
+      const created = await call('POST', '/v1/jobs', token, { id: jobId, name: 'A', hourlyWage: 10_320, companySize: '5plus' });
+      check(R.JobResponse.strict(), created.body, 'createJob');
+      check(R.JobList.strict(), (await call('GET', '/v1/jobs', token)).body, 'listJobs');
+
+      const synced = await sync(token, {
+        workDays: [dayChange(randomUUID(), jobId, '2026-11-17', iso('2026-11-17T12:00:00Z'))],
+        weeklyHolidayPays: [weeklyChange(randomUUID(), jobId, iso('2026-11-22T12:00:00Z'))],
+        settings: { deductRate: 3.3, updatedAt: iso('2026-11-22T00:00:00Z') },
+        firstOpenAt: iso('2026-11-01T00:00:00Z'),
+      });
+      check(R.SyncResponse.strict(), synced.body, 'sync');
+      assert.equal(synced.body.workDays.length, 1);
+
+      const dayId = randomUUID();
+      const put = await call('PUT', `/v1/work-days/${dayId}`, token, {
+        jobId, date: '2026-11-18', hours: hours8, allowance: 0, wageSnapshot: 10_320, updatedAt: iso('2026-11-18T12:00:00Z'),
+      });
+      check(R.WorkDayResponse.strict(), put.body, 'putWorkDay');
+      check(R.WorkDaysMonthResponse.strict(), (await call('GET', '/v1/work-days?month=2026-11', token)).body, 'listWorkDays');
+      check(R.MeResponse.strict(), (await call('GET', '/v1/me', token)).body, 'me');
+      const s = await call('PUT', '/v1/me/settings', token, { deductRate: 9.4, updatedAt: iso('2026-11-23T00:00:00Z') });
+      check(R.UserSettingsResponse.strict(), s.body, 'putSettings');
+      check(R.ErrorResponse, (await call('GET', '/v1/rules/1999')).body, 'rules 404');
     });
   });
 

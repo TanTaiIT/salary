@@ -29,6 +29,8 @@ export interface RouteOptions {
 
 interface Route {
   method: string;
+  /** Đường dẫn khai báo, ví dụ /v1/work-days/:id */
+  path: string;
   regex: RegExp;
   keys: string[];
   handler: Handler;
@@ -58,6 +60,7 @@ export class Router {
       .join('/');
     this.#routes.push({
       method: method.toUpperCase(),
+      path,
       regex: new RegExp(`^${pattern}/?$`),
       keys,
       handler,
@@ -71,6 +74,11 @@ export class Router {
   post(path: string, h: Handler, o?: RouteOptions) { return this.add('POST', path, h, o); }
   put(path: string, h: Handler, o?: RouteOptions) { return this.add('PUT', path, h, o); }
   delete(path: string, h: Handler, o?: RouteOptions) { return this.add('DELETE', path, h, o); }
+
+  /** Mọi route đã khai báo (dùng để kiểm tra tài liệu OpenAPI khớp với route thật) */
+  list(): { method: string; path: string; auth: boolean; admin: boolean }[] {
+    return this.#routes.map((r) => ({ method: r.method, path: r.path, auth: r.opts.auth, admin: !!r.opts.admin }));
+  }
 
   match(method: string, pathname: string): Match {
     const allowed: string[] = [];

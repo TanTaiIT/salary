@@ -6,7 +6,7 @@ import { isDuplicateKey, type JobDoc } from '../db/client.ts';
 import { jobToApi } from '../services/jobs.ts';
 
 /** id không bắt buộc: app tạo UUID khi offline, nên gửi lên luôn để không phải đổi id về sau */
-const CreateJobRequest = JobInput.extend({ id: Id.optional() });
+export const CreateJobRequest = JobInput.extend({ id: Id.optional() });
 
 export function jobRoutes(r: Router): void {
   r.get('/v1/jobs', async ({ deps, userId }) => {

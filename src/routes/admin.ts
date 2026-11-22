@@ -6,7 +6,7 @@ import { ok, parse } from '../lib/http.ts';
 import type { Router } from '../lib/router.ts';
 import { parseYear, rulesToApi } from './rules.ts';
 
-const AuditQuery = z.object({
+export const AuditQuery = z.object({
   target: z.string().min(1).max(100).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });

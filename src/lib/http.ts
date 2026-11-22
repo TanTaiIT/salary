@@ -19,6 +19,8 @@ export interface Reply {
   status: number;
   body?: unknown;
   headers?: Record<string, string>;
+  /** Gửi nguyên văn (ví dụ trang HTML), kèm content-type trong headers; bỏ qua body */
+  raw?: string;
 }
 
 export const ok = (body: unknown): Reply => ({ status: 200, body });
@@ -64,6 +66,11 @@ export function send(res: ServerResponse, reply: Reply): void {
   res.setHeader('x-content-type-options', 'nosniff');
   res.setHeader('cache-control', 'no-store');
   for (const [k, v] of Object.entries(reply.headers ?? {})) res.setHeader(k, v);
+  if (reply.raw !== undefined) {
+    res.setHeader('content-length', Buffer.byteLength(reply.raw));
+    res.end(reply.raw);
+    return;
+  }
   if (reply.body === undefined || reply.status === 204) {
     res.end();
     return;

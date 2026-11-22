@@ -25,7 +25,9 @@ src/
   routes/              health, auth, rules, jobs, work-days, sync, me
   payroll/             tính lương, thống kê, khấu trừ; thuần TypeScript, không phụ thuộc thư viện nào
   schemas/             schema zod kiểm tra dữ liệu đầu vào
+  openapi/             tài liệu OpenAPI sinh từ schema zod, schema của phản hồi
 scripts/seed-rules.ts  nạp quy định năm 2026
+scripts/openapi.ts     ghi openapi.json (app sinh kiểu TypeScript từ file này)
 test/                  test API, payroll, schema
 ```
 
@@ -44,6 +46,14 @@ pnpm dev                              # http://localhost:3000/health
 ```
 
 Kiểm tra: `pnpm test` và `pnpm typecheck`.
+
+### Tài liệu API (OpenAPI / Swagger)
+
+Tài liệu OpenAPI 3.1 sinh từ chính các schema zod server dùng để kiểm tra dữ liệu (`src/openapi/`), nên không lệch
+với code; `test/openapi.test.ts` báo lỗi nếu có route chưa ghi vào tài liệu hoặc `openapi.json` đã commit bị cũ.
+
+- Swagger UI: `http://localhost:3000/docs`, bản JSON: `/openapi.json` (chỉ có ngoài production).
+- Sau khi đổi route hoặc schema: `pnpm openapi` để ghi lại `openapi.json`, rồi ở repo app chạy `pnpm gen:api`.
 
 `test/integration.test.ts` chạy với MongoDB thật (mặc định MongoDB trong docker-compose, đổi bằng
 `MONGODB_TEST_URI`). Mỗi lần chạy tạo một database `llhq_test_*` riêng và xóa khi xong. Không kết nối
@@ -71,6 +81,7 @@ Kiểm tra: `pnpm test` và `pnpm typecheck`.
 | Phương thức | Đường dẫn | Đăng nhập |
 |---|---|---|
 | GET | /health | không |
+| GET | /openapi.json, /docs | không (chỉ ngoài production) |
 | POST | /v1/auth/dev-login | không (chỉ ngoài production) |
 | POST | /v1/auth/refresh | không (xoay vòng, token cũ hết dùng được) |
 | POST | /v1/auth/logout | không |
