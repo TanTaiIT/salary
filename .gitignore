@@ -1,5 +1,9 @@
 node_modules/
+# Mọi file môi trường chứa bí mật; chỉ commit các file mẫu
 .env
+.env.*
+!.env.example
+!.env.production.example
 *.log
 coverage/
 .DS_Store

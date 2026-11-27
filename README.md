@@ -107,6 +107,11 @@ tài khoản Apple, Google (`pnpm set-role apple <sub> admin`); script từ ch�
 
 ### Deploy production
 
+- Hai môi trường tách riêng: `.env` cho dev (database `llhq_dev`), `.env.production` cho production (database `llhq`,
+  `JWT_SECRET` riêng). Cả hai bị `.gitignore` bỏ qua; mẫu để commit là `.env.example` và `.env.production.example`.
+- Trên Render, nhập các biến của `.env.production` ở mục Environment (Render không đọc file). Gói Free không có Shell, nên
+  các lệnh vào database production chạy từ máy: `pnpm seed:prod`, `pnpm seed:config:prod`, `pnpm migrate:prod`,
+  `pnpm set-role:prod <apple|google> <sub> admin`. Các lệnh này báo lỗi ngay nếu thiếu `.env.production`.
 - `NODE_ENV=production` là bắt buộc (biến này không có giá trị mặc định). Khác `production` thì `dev-login` và `/docs`
   được bật, và server ghi cảnh báo vào log lúc khởi động.
 - `TRUST_PROXY` là số proxy, load balancer đứng trước server (`false`, `true` = 1, hoặc một số). Đặt đúng số thật:

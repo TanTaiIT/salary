@@ -14,6 +14,11 @@
     "seed:config": "node --env-file-if-exists=.env scripts/seed-config.ts",
     "migrate": "node --env-file-if-exists=.env scripts/migrate.ts",
     "set-role": "node --env-file-if-exists=.env scripts/set-role.ts",
+    "start:prod": "node --env-file=.env.production src/server.ts",
+    "seed:prod": "node --env-file=.env.production scripts/seed-rules.ts",
+    "seed:config:prod": "node --env-file=.env.production scripts/seed-config.ts",
+    "migrate:prod": "node --env-file=.env.production scripts/migrate.ts",
+    "set-role:prod": "node --env-file=.env.production scripts/set-role.ts",
     "test": "node --test \"test/**/*.test.ts\"",
     "typecheck": "tsc -p tsconfig.json",
     "openapi": "node scripts/openapi.ts"
