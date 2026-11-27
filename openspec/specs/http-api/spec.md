@@ -42,7 +42,7 @@ Mỗi request MUST có một request id được trả trong header `x-request-i
 
 ### Requirement: Đọc body JSON
 
-Route có body MUST yêu cầu `Content-Type: application/json` và body không vượt quá `BODY_LIMIT_BYTES` (mặc định 100.000 byte). Dữ liệu sai schema MUST trả 422 với `details` là danh sách `{ path, message }` cho từng trường.
+Route có body MUST yêu cầu `Content-Type: application/json` và body không vượt quá `BODY_LIMIT_BYTES` (mặc định 512.000 byte, đủ cho gói `/v1/sync` lớn nhất: 500 bản mỗi loại với mọi trường ở độ dài tối đa). Dữ liệu sai schema MUST trả 422 với `details` là danh sách `{ path, message }` cho từng trường.
 
 #### Scenario: Sai Content-Type
 
@@ -67,12 +67,17 @@ Route có body MUST yêu cầu `Content-Type: application/json` và body không 
 
 ### Requirement: Giới hạn tần suất
 
-Server MUST giới hạn 300 yêu cầu mỗi phút mỗi IP cho mọi route, và thêm 10 yêu cầu mỗi phút mỗi IP cho các route đăng nhập. Khi `TRUST_PROXY = true`, IP lấy từ giá trị đầu tiên của `X-Forwarded-For`; nếu không thì lấy IP của kết nối.
+Server MUST giới hạn 300 yêu cầu mỗi phút mỗi IP cho mọi route, và thêm 10 yêu cầu mỗi phút mỗi IP cho các route đăng nhập. `TRUST_PROXY` là số proxy đứng trước server (`false` = 0, `true` = 1, hoặc một số từ 0 đến 10). Khi lớn hơn 0, IP MUST lấy từ phần tử thứ `TRUST_PROXY` tính từ **cuối** `X-Forwarded-For` (phần tử đầu nếu danh sách ngắn hơn), vì các phần tử trước đó do client tự ghi; khi bằng 0 hoặc không có header thì lấy IP của kết nối.
 
 #### Scenario: Vượt giới hạn đăng nhập
 
 - **WHEN** một IP gọi `/v1/auth/refresh` lần thứ 11 trong một phút
 - **THEN** server trả 429 với `error.code = "rate_limited"`
+
+#### Scenario: Client giả X-Forwarded-For sau proxy
+
+- **WHEN** `TRUST_PROXY = 1` và client gửi `X-Forwarded-For: 6.6.6.6` khác nhau ở mỗi lần gọi, proxy nối IP thật vào cuối
+- **THEN** server tính giới hạn theo IP thật, và lần gọi vượt giới hạn vẫn nhận 429
 
 ### Requirement: Header an toàn
 
@@ -94,12 +99,17 @@ Mọi phản hồi MUST có `x-content-type-options: nosniff` và `cache-control
 
 ### Requirement: Cấu hình khi khởi động
 
-Server MUST kiểm tra biến môi trường khi khởi động và từ chối chạy nếu sai, đặc biệt `JWT_SECRET` phải có ít nhất 32 ký tự và `MONGODB_URI` phải bắt đầu bằng `mongodb`.
+Server MUST kiểm tra biến môi trường khi khởi động và từ chối chạy nếu sai, đặc biệt `JWT_SECRET` phải có ít nhất 32 ký tự, `MONGODB_URI` phải bắt đầu bằng `mongodb`, và `NODE_ENV` MUST được đặt rõ (`development`, `test` hoặc `production`), không có giá trị mặc định. Khi `NODE_ENV` khác `production`, server MUST ghi cảnh báo vào log lúc khởi động.
 
 #### Scenario: JWT_SECRET quá ngắn
 
 - **WHEN** khởi động với `JWT_SECRET` 20 ký tự
 - **THEN** server dừng với thông báo JWT_SECRET cần ít nhất 32 ký tự
+
+#### Scenario: Thiếu NODE_ENV
+
+- **WHEN** khởi động mà không đặt `NODE_ENV`
+- **THEN** server dừng với thông báo NODE_ENV bắt buộc, thay vì ngầm chạy như development (bật dev-login)
 
 ### Requirement: Tắt server an toàn
 

@@ -55,9 +55,14 @@ Route khai báo `admin: true` MUST yêu cầu access token hợp lệ, MUST tr�
 
 ### Requirement: Cấp quyền
 
-Script `pnpm set-role <provider> <providerId> <admin|user>` MUST đặt `users.role` cho người dùng tương ứng và thoát với mã 1 nếu không tìm thấy.
+Script `pnpm set-role <provider> <providerId> <admin|user>` MUST đặt `users.role` cho người dùng tương ứng và thoát với mã 1 nếu không tìm thấy. Khi `NODE_ENV = production`, script MUST từ chối `provider = dev` (tài khoản dev đăng nhập chỉ bằng tên) và thoát với mã 1.
 
 #### Scenario: Cấp quyền admin
 
 - **WHEN** chạy `pnpm set-role dev tai admin` với người dùng dev `tai` đã tồn tại
 - **THEN** `users.role` của người đó là `admin`
+
+#### Scenario: Tài khoản dev ở production
+
+- **WHEN** chạy `pnpm set-role dev tai admin` với `NODE_ENV = production`
+- **THEN** script thoát với mã 1 và không sửa database

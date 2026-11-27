@@ -9,11 +9,20 @@ import { buildRouter } from './routes/index.ts';
 
 const REQUEST_ID_RE = /^[\w-]{8,64}$/;
 
-function clientIp(req: IncomingMessage, trustProxy: boolean): string {
-  if (trustProxy) {
+/**
+ * IP người dùng, dùng cho giới hạn tần suất.
+ * Mỗi proxy nối IP mà nó nhận kết nối vào CUỐI X-Forwarded-For, nên sau `hops` proxy, IP thật là phần tử thứ
+ * `hops` tính từ cuối. Các phần tử đứng trước do client tự ghi, không được tin: lấy phần tử đầu tiên thì kẻ gian
+ * chỉ cần đổi header là vượt được giới hạn đăng nhập.
+ */
+export function clientIp(req: Pick<IncomingMessage, 'headers' | 'socket'>, hops: number): string {
+  if (hops > 0) {
     const fwd = req.headers['x-forwarded-for'];
-    const first = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(',')[0]?.trim();
-    if (first) return first;
+    const list = (Array.isArray(fwd) ? fwd.join(',') : (fwd ?? ''))
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (list.length > 0) return list[Math.max(0, list.length - hops)]!;
   }
   return req.socket.remoteAddress ?? 'unknown';
 }
@@ -30,7 +39,7 @@ export function createApp(deps: Deps) {
     res.setHeader('x-request-id', requestId);
 
     const url = new URL(req.url ?? '/', 'http://localhost');
-    const ip = clientIp(req, deps.config.trustProxy);
+    const ip = clientIp(req, deps.config.trustProxyHops);
     // Đặt trước mọi thứ để cả phản hồi lỗi (429, 401…) cũng đọc được từ trình duyệt
     const corsAllowed = applyCors(req, res, deps.config.corsOrigins);
 

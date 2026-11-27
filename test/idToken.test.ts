@@ -44,6 +44,7 @@ describe('Kiểm tra id token', () => {
 describe('Cấu hình đăng nhập', () => {
   test('danh sách client id tách theo dấu phẩy, bỏ khoảng trắng và phần tử rỗng', () => {
     const c = loadConfig({
+      NODE_ENV: 'test',
       MONGODB_URI: 'mongodb://unused',
       JWT_SECRET: 'test-secret-test-secret-test-secret-1234',
       APPLE_CLIENT_IDS: ' a, b ,,',

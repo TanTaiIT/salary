@@ -102,7 +102,16 @@ với code; `test/openapi.test.ts` báo lỗi nếu có route chưa ghi vào tà
 Bản web của app (Expo web) gọi API từ trình duyệt nên cần CORS: đặt `CORS_ORIGINS=http://localhost:8081` khi dev,
 và liệt kê đúng domain web ở production (không nên dùng `*`). App iOS, Android không cần.
 
-Quyền admin đọc từ `users.role` trong database: `pnpm set-role dev <tên> admin`.
+Quyền admin đọc từ `users.role` trong database: `pnpm set-role dev <tên> admin` khi dev. Ở production chỉ cấp cho
+tài khoản Apple, Google (`pnpm set-role apple <sub> admin`); script từ chối tài khoản dev.
+
+### Deploy production
+
+- `NODE_ENV=production` là bắt buộc (biến này không có giá trị mặc định). Khác `production` thì `dev-login` và `/docs`
+  được bật, và server ghi cảnh báo vào log lúc khởi động.
+- `TRUST_PROXY` là số proxy, load balancer đứng trước server (`false`, `true` = 1, hoặc một số). Đặt đúng số thật:
+  đặt thừa thì client giả được IP qua `X-Forwarded-For` và vượt được giới hạn đăng nhập.
+- `BODY_LIMIT_BYTES` mặc định 512.000, đủ cho gói `/v1/sync` lớn nhất của app; không đặt nhỏ hơn.
 Cấu hình quảng cáo: sửa `scripts/seed-config.ts` rồi chạy `pnpm seed:config`.
 
 ## Việc tiếp theo

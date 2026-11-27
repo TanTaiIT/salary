@@ -9,6 +9,10 @@ import { RateLimiter } from './lib/rateLimit.ts';
 
 const config = loadConfig();
 const logger = createLogger(config.logLevel);
+if (config.env !== 'production') {
+  // Nhắc rõ trong log để không ai deploy nhầm môi trường dev ra ngoài
+  logger.warn('NODE_ENV khác production: /v1/auth/dev-login và /docs đang bật', { env: config.env });
+}
 
 const { client, db } = await connectMongo(config.mongo.uri, config.mongo.db);
 const cols = getCollections(db);

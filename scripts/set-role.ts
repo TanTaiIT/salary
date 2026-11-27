@@ -10,6 +10,11 @@ if (!provider || !providerId || (role !== 'admin' && role !== 'user')) {
 }
 
 const config = loadConfig();
+// Tài khoản dev đăng nhập chỉ bằng tên, ai biết tên cũng vào được: không bao giờ cấp quyền cho nó ở production
+if (config.env === 'production' && provider === 'dev') {
+  console.error('Ở production chỉ cấp quyền cho tài khoản apple hoặc google, không dùng tài khoản dev');
+  process.exit(1);
+}
 const { client, db } = await connectMongo(config.mongo.uri, config.mongo.db);
 const res = await getCollections(db).users.updateOne(
   { provider: provider as 'dev' | 'apple' | 'google' | 'kakao', providerId },
