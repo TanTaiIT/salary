@@ -2041,6 +2041,10 @@
             "maximum": 9007199254740991,
             "description": "Số nguyên won"
           },
+          "note": {
+            "type": "string",
+            "description": "Ghi chú của người dùng, rỗng nếu không có"
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -2095,6 +2099,7 @@
           "hours",
           "allowance",
           "wageSnapshot",
+          "note",
           "updatedAt",
           "deletedAt",
           "pay"
@@ -2178,6 +2183,10 @@
                   "maximum": 9007199254740991,
                   "description": "Số nguyên won"
                 },
+                "note": {
+                  "type": "string",
+                  "description": "Ghi chú của người dùng, rỗng nếu không có"
+                },
                 "updatedAt": {
                   "type": "string",
                   "format": "date-time",
@@ -2232,6 +2241,7 @@
                 "hours",
                 "allowance",
                 "wageSnapshot",
+                "note",
                 "updatedAt",
                 "deletedAt",
                 "pay"
@@ -2574,6 +2584,10 @@
                   "maximum": 9007199254740991,
                   "description": "Số nguyên won"
                 },
+                "note": {
+                  "type": "string",
+                  "description": "Ghi chú của người dùng, rỗng nếu không có"
+                },
                 "updatedAt": {
                   "type": "string",
                   "format": "date-time",
@@ -2628,6 +2642,7 @@
                 "hours",
                 "allowance",
                 "wageSnapshot",
+                "note",
                 "updatedAt",
                 "deletedAt",
                 "pay"
@@ -2992,6 +3007,11 @@
             "minimum": 1,
             "maximum": 1000000
           },
+          "note": {
+            "default": "",
+            "type": "string",
+            "maxLength": 200
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -3024,7 +3044,7 @@
           },
           "jobs": {
             "default": [],
-            "maxItems": 500,
+            "maxItems": 250,
             "type": "array",
             "items": {
               "type": "object",
@@ -3088,7 +3108,7 @@
             }
           },
           "workDays": {
-            "maxItems": 500,
+            "maxItems": 250,
             "type": "array",
             "items": {
               "type": "object",
@@ -3161,6 +3181,11 @@
                       "minimum": 1,
                       "maximum": 1000000
                     },
+                    "note": {
+                      "default": "",
+                      "type": "string",
+                      "maxLength": 200
+                    },
                     "updatedAt": {
                       "type": "string",
                       "format": "date-time",
@@ -3198,7 +3223,7 @@
           },
           "weeklyHolidayPays": {
             "default": [],
-            "maxItems": 500,
+            "maxItems": 250,
             "type": "array",
             "items": {
               "type": "object",

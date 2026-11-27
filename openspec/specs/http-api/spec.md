@@ -42,7 +42,7 @@ Mỗi request MUST có một request id được trả trong header `x-request-i
 
 ### Requirement: Đọc body JSON
 
-Route có body MUST yêu cầu `Content-Type: application/json` và body không vượt quá `BODY_LIMIT_BYTES` (mặc định 512.000 byte, đủ cho gói `/v1/sync` lớn nhất: 500 bản mỗi loại với mọi trường ở độ dài tối đa). Dữ liệu sai schema MUST trả 422 với `details` là danh sách `{ path, message }` cho từng trường.
+Route có body MUST yêu cầu `Content-Type: application/json` và body không vượt quá `BODY_LIMIT_BYTES` (mặc định 512.000 byte, đủ cho gói `/v1/sync` lớn nhất: 250 bản mỗi loại với mọi trường ở độ dài tối đa, kể cả ghi chú, khoảng 390 KB). Dữ liệu sai schema MUST trả 422 với `details` là danh sách `{ path, message }` cho từng trường.
 
 #### Scenario: Sai Content-Type
 

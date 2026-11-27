@@ -8,7 +8,7 @@
 
 ### Requirement: Đẩy thay đổi lên
 
-`POST /v1/sync` MUST nhận `{ since, workDays }` với tối đa 500 thay đổi, mỗi thay đổi là `{ id, data, deletedAt }`. Server MUST xử lý từng thay đổi theo thứ tự theo cùng luật với `PUT /v1/work-days/:id`, và trả `results` gồm `{ id, status }` cho từng thay đổi, với `status` là `applied`, `stale` hoặc `rejected` (kèm `code`). Một thay đổi bị từ chối MUST NOT làm hỏng các thay đổi khác trong cùng gói.
+`POST /v1/sync` MUST nhận `{ since, workDays }` với tối đa 250 thay đổi (`SYNC_BATCH_MAX`), mỗi thay đổi là `{ id, data, deletedAt }`. Server MUST xử lý từng thay đổi theo thứ tự theo cùng luật với `PUT /v1/work-days/:id`, và trả `results` gồm `{ id, status }` cho từng thay đổi, với `status` là `applied`, `stale` hoặc `rejected` (kèm `code`). Một thay đổi bị từ chối MUST NOT làm hỏng các thay đổi khác trong cùng gói.
 
 #### Scenario: Bản mới hơn được ghi
 
@@ -37,9 +37,9 @@
 - **WHEN** gửi thay đổi có id khác nhưng cùng nơi làm và cùng ngày với một ngày công chưa xóa
 - **THEN** thay đổi có `status = "rejected"` với `code = "duplicate_day"`
 
-#### Scenario: Gói quá 500 thay đổi
+#### Scenario: Gói quá 250 thay đổi
 
-- **WHEN** gửi 501 thay đổi trong một lần
+- **WHEN** gửi 251 thay đổi trong một lần
 - **THEN** server trả 422 với `error.code = "validation_failed"`
 
 ### Requirement: Kéo thay đổi về
@@ -69,7 +69,7 @@ Server MUST trả `jobs`, `workDays` và `weeklyHolidayPays` của người dùn
 
 ### Requirement: Đồng bộ nơi làm việc
 
-`POST /v1/sync` MUST nhận thêm `jobs` (không bắt buộc, mặc định rỗng, tối đa 500), mỗi thay đổi là `{ id, data: { name, hourlyWage, companySize, updatedAt }, deletedAt }` với id là UUID do app tạo. Server MUST ghi `jobs` trước `workDays` theo nguyên tắc bản sửa mới nhất thắng, và trả `jobResults` cùng dạng với `results`.
+`POST /v1/sync` MUST nhận thêm `jobs` (không bắt buộc, mặc định rỗng, tối đa 250), mỗi thay đổi là `{ id, data: { name, hourlyWage, companySize, updatedAt }, deletedAt }` với id là UUID do app tạo. Server MUST ghi `jobs` trước `workDays` theo nguyên tắc bản sửa mới nhất thắng, và trả `jobResults` cùng dạng với `results`.
 
 #### Scenario: Nơi làm và ngày công tạo cùng gói
 
@@ -97,7 +97,7 @@ Server MUST trả `jobs`, `workDays` và `weeklyHolidayPays` của người dùn
 
 ### Requirement: Đồng bộ 주휴수당
 
-`POST /v1/sync` MUST nhận thêm `weeklyHolidayPays` (không bắt buộc, mặc định rỗng, tối đa 500), mỗi thay đổi là `{ id, data: { jobId, weekStart, amount, updatedAt }, deletedAt }` với id là UUID do app tạo. Server MUST ghi chúng sau `workDays` theo luật của spec weekly-holiday-pay, và trả `weeklyHolidayPayResults` cùng dạng với `results`.
+`POST /v1/sync` MUST nhận thêm `weeklyHolidayPays` (không bắt buộc, mặc định rỗng, tối đa 250), mỗi thay đổi là `{ id, data: { jobId, weekStart, amount, updatedAt }, deletedAt }` với id là UUID do app tạo. Server MUST ghi chúng sau `workDays` theo luật của spec weekly-holiday-pay, và trả `weeklyHolidayPayResults` cùng dạng với `results`.
 
 #### Scenario: Gói kiểu cũ
 
@@ -109,7 +109,7 @@ Server MUST trả `jobs`, `workDays` và `weeklyHolidayPays` của người dùn
 - **WHEN** gói có một nơi làm mới và một khoản 주휴수당 dùng `jobId` của nơi làm đó
 - **THEN** cả hai có `status = "applied"`
 
-#### Scenario: Gói quá 500 khoản
+#### Scenario: Gói quá 250 khoản
 
-- **WHEN** gửi 501 khoản 주휴수당 trong một lần
+- **WHEN** gửi 251 khoản 주휴수당 trong một lần
 - **THEN** server trả 422 với `error.code = "validation_failed"`

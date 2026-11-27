@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { JobInput, SyncRequest, UserSettingsInput, WeeklyHolidayPayInput, WorkDayInput } from '../src/schemas/index.ts';
+import {
+  JobInput,
+  NOTE_MAX,
+  SYNC_BATCH_MAX,
+  SyncRequest,
+  UserSettingsInput,
+  WeeklyHolidayPayInput,
+  WorkDayInput,
+} from '../src/schemas/index.ts';
 
 const errorPaths = (r: { success: boolean; error?: { issues: { path: PropertyKey[] }[] } }) =>
   (r.error?.issues ?? []).map((i) => i.path.join('.'));
@@ -69,10 +77,20 @@ test('gói đồng bộ kiểu cũ vẫn hợp lệ, trường mới mặc đị
   assert.deepEqual(r.weeklyHolidayPays, []);
 });
 
-test('từ chối gói quá 500 khoản 주휴수당', () => {
+test('từ chối gói quá SYNC_BATCH_MAX khoản 주휴수당', () => {
   const change = { id: '0b7c7f0e-8a43-4f6b-9a3e-2f1d6c5b4a39', data: weekly, deletedAt: null };
-  const r = SyncRequest.safeParse({ since: null, workDays: [], weeklyHolidayPays: Array(501).fill(change) });
+  assert.equal(SyncRequest.safeParse({ since: null, workDays: [], weeklyHolidayPays: Array(SYNC_BATCH_MAX).fill(change) }).success, true);
+  const r = SyncRequest.safeParse({ since: null, workDays: [], weeklyHolidayPays: Array(SYNC_BATCH_MAX + 1).fill(change) });
   assert.deepEqual(errorPaths(r), ['weeklyHolidayPays']);
+});
+
+test('ghi chú ngày công: không bắt buộc, bỏ khoảng trắng hai đầu, tối đa NOTE_MAX ký tự', () => {
+  // App cũ không gửi note: hợp lệ, coi là rỗng
+  assert.equal(WorkDayInput.parse(valid).note, '');
+  assert.equal(WorkDayInput.parse({ ...valid, note: '  Nghỉ trưa sớm  ' }).note, 'Nghỉ trưa sớm');
+  assert.equal(WorkDayInput.safeParse({ ...valid, note: 'ữ'.repeat(NOTE_MAX) }).success, true);
+  assert.deepEqual(errorPaths(WorkDayInput.safeParse({ ...valid, note: 'a'.repeat(NOTE_MAX + 1) })), ['note']);
+  assert.deepEqual(errorPaths(WorkDayInput.safeParse({ ...valid, note: 123 })), ['note']);
 });
 
 test('cài đặt: tỉ lệ khấu trừ bước 0,1 từ 0 đến 100', () => {

@@ -372,6 +372,43 @@ describe('Tích hợp MongoDB', { skip }, () => {
       ]);
     });
 
+    test('ghi chú ngày công: lưu qua sync và PUT, sửa và xóa được, bản ghi cũ không có ghi chú trả rỗng', async () => {
+      const u = await newUser();
+      const jobId = randomUUID();
+      const d1 = randomUUID();
+      const withNote = (note: string, updatedAt: string) => {
+        const c = dayChange(d1, jobId, '2026-11-02', updatedAt);
+        return { ...c, data: { ...c.data, note } };
+      };
+
+      const r1 = await sync(u.token, { jobs: [jobChange(jobId, iso('2026-11-01'))], workDays: [withNote('  Ca đêm, về muộn  ', iso('2026-11-02'))] });
+      assert.deepEqual(r1.body.results, [{ id: d1, status: 'applied' }]);
+      assert.equal(r1.body.workDays.find((d: { id: string }) => d.id === d1).note, 'Ca đêm, về muộn');
+      assert.equal((await db.cols.workDays.findOne({ _id: d1 }))?.note, 'Ca đêm, về muộn');
+
+      // Sửa ghi chú rồi xóa ghi chú bằng PUT; GET theo tháng trả đúng
+      const put = (note: string, at: string) => call('PUT', `/v1/work-days/${d1}`, u.token, { ...withNote(note, at).data });
+      assert.equal((await put('Đổi ca', iso('2026-11-03'))).body.note, 'Đổi ca');
+      assert.equal((await put('', iso('2026-11-04'))).body.note, '');
+
+      // App cũ không gửi note: lưu thành rỗng, không lỗi
+      const old = await sync(u.token, { workDays: [dayChange(d1, jobId, '2026-11-02', iso('2026-11-05'))] });
+      assert.deepEqual(old.body.results, [{ id: d1, status: 'applied' }]);
+
+      // Bản ghi tạo trước khi có ghi chú (thiếu trường note) vẫn trả note = ""
+      const legacy = randomUUID();
+      await db.cols.workDays.insertOne({
+        _id: legacy, userId: u.id, jobId, date: '2026-11-09', hours: hours8, allowance: 0, wageSnapshot: 10_320,
+        updatedAt: new Date('2026-11-09T00:00:00Z'), deletedAt: null, serverUpdatedAt: new Date(),
+      });
+      const month = await call('GET', `/v1/work-days?month=2026-11`, u.token);
+      assert.equal(month.body.items.find((d: { id: string }) => d.id === legacy).note, '');
+
+      // Quá NOTE_MAX ký tự thì bị từ chối
+      const tooLong = await sync(u.token, { workDays: [withNote('a'.repeat(201), iso('2026-11-06'))] });
+      assert.equal(tooLong.status, 422);
+    });
+
     test('2.300 ngày công, nhóm trùng thời điểm vắt qua giới hạn: gọi lặp theo hasMore nhận đủ', async () => {
       const u = await newUser();
       const jobId = randomUUID();

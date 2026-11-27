@@ -8,7 +8,7 @@ Ghi, sửa, xóa và xem ngày công theo tháng. Id ngày công là UUID do app
 
 ### Requirement: Xem ngày công trong tháng
 
-`GET /v1/work-days?month=YYYY-MM&jobId=` MUST trả `{ month, items, summary }`: `items` là các ngày công chưa xóa của người dùng trong tháng (lọc theo `jobId` nếu có), sắp theo ngày tăng dần, mỗi phần tử kèm `pay` tính bằng `wageSnapshot` của chính ngày đó; `summary` là tổng lương tháng theo spec payroll, gồm cả 주휴수당 của những tuần có ngày Chủ nhật nằm trong tháng.
+`GET /v1/work-days?month=YYYY-MM&jobId=` MUST trả `{ month, items, summary }`: `items` là các ngày công chưa xóa của người dùng trong tháng (lọc theo `jobId` nếu có), sắp theo ngày tăng dần, mỗi phần tử kèm `note` (ghi chú, `""` nếu không có, kể cả bản ghi tạo trước khi có ghi chú) và `pay` tính bằng `wageSnapshot` của chính ngày đó; `summary` là tổng lương tháng theo spec payroll, gồm cả 주휴수당 của những tuần có ngày Chủ nhật nằm trong tháng.
 
 #### Scenario: Tính theo lương giờ lưu cùng ngày công
 

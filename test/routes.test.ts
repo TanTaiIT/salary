@@ -249,7 +249,7 @@ describe('Xóa ngày công của nơi làm đã xóa mềm', () => {
     const { applyWorkDayChange } = await import('../src/services/workDays.ts');
     const cols = fakeCols() as unknown as Collections;
     const ids = { active: new Set<string>(), owned: new Set([JOB_ID]) };
-    const data = { jobId: JOB_ID, date: '2026-11-02', hours: { x1: 8, x1_5: 0, x2: 0, x2_5: 0, x3: 0 }, allowance: 0, wageSnapshot: 10320, updatedAt: '2026-11-02T00:00:00.000Z' };
+    const data = { jobId: JOB_ID, date: '2026-11-02', hours: { x1: 8, x1_5: 0, x2: 0, x2_5: 0, x3: 0 }, allowance: 0, wageSnapshot: 10320, note: '', updatedAt: '2026-11-02T00:00:00.000Z' };
     const del = await applyWorkDayChange(cols, 'user-1', { id: DAY_ID, data, deletedAt: '2026-11-03T00:00:00.000Z' }, ids);
     assert.equal(del.status, 'applied');
     await assert.rejects(

@@ -45,6 +45,8 @@ export interface WorkDayDoc {
   hours: Hours;
   allowance: number;
   wageSnapshot: number;
+  /** Ghi chú của người dùng; bản ghi tạo trước khi có ghi chú thì thiếu trường này (coi là rỗng) */
+  note?: string;
   /** Thời điểm sửa trên máy người dùng, dùng để giải quyết xung đột */
   updatedAt: Date;
   deletedAt: Date | null;

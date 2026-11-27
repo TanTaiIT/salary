@@ -2,7 +2,7 @@ import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { clientIp } from '../src/app.ts';
 import { loadConfig } from '../src/config.ts';
-import { SyncRequest } from '../src/schemas/index.ts';
+import { NOTE_MAX, SYNC_BATCH_MAX, SyncRequest } from '../src/schemas/index.ts';
 import { config, startTestServer } from './helpers.ts';
 
 const BASE_ENV = {
@@ -94,15 +94,16 @@ describe('Giới hạn kích thước body', () => {
     const at = '2026-11-27T10:00:00.000Z'; // app gửi bằng toISOString
     const uuid = (i: number) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
     const longJobId = 'j'.repeat(64);
-    // Mỗi loại đủ 500 bản (giới hạn của SyncRequest, cũng là BATCH của app), mọi trường ở độ dài lớn nhất
+    // Mỗi loại đủ SYNC_BATCH_MAX bản (giới hạn của SyncRequest, cũng là BATCH của app), mọi trường ở độ dài lớn nhất.
+    // "ữ" là ký tự tốn nhiều byte nhất trên mỗi đơn vị độ dài chuỗi (3 byte UTF-8)
     const body = {
       since: at,
-      jobs: Array.from({ length: 500 }, (_, i) => ({
+      jobs: Array.from({ length: SYNC_BATCH_MAX }, (_, i) => ({
         id: uuid(i),
         data: { name: 'ữ'.repeat(60), hourlyWage: 1_000_000, companySize: '5plus', updatedAt: at },
         deletedAt: at,
       })),
-      workDays: Array.from({ length: 500 }, (_, i) => ({
+      workDays: Array.from({ length: SYNC_BATCH_MAX }, (_, i) => ({
         id: uuid(i),
         data: {
           jobId: longJobId,
@@ -110,11 +111,12 @@ describe('Giới hạn kích thước body', () => {
           hours: { x1: 20.5, x1_5: 0.5, x2: 0.5, x2_5: 0.5, x3: 0.5 },
           allowance: 100_000_000,
           wageSnapshot: 1_000_000,
+          note: 'ữ'.repeat(NOTE_MAX),
           updatedAt: at,
         },
         deletedAt: at,
       })),
-      weeklyHolidayPays: Array.from({ length: 500 }, (_, i) => ({
+      weeklyHolidayPays: Array.from({ length: SYNC_BATCH_MAX }, (_, i) => ({
         id: uuid(i),
         data: { jobId: longJobId, weekStart: '2026-11-23', amount: 100_000_000, updatedAt: at },
         deletedAt: at,

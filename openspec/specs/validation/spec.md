@@ -8,7 +8,12 @@ Schema zod trong `src/schemas/` kiểm tra dữ liệu app gửi lên. Thư mụ
 
 ### Requirement: Dữ liệu một ngày công
 
-Hệ thống MUST chấp nhận một ngày công chỉ khi: `jobId` là chuỗi 1 đến 64 ký tự; `date` là ngày hợp lệ dạng `"YYYY-MM-DD"`; mỗi loại giờ trong `hours` (x1, x1_5, x2, x2_5, x3) là bội số của 0,5 trong khoảng 0 đến 24; tổng giờ không quá 24; `allowance` là số nguyên won từ 0 đến 100.000.000; `wageSnapshot` là số nguyên won từ 1 đến 1.000.000; `updatedAt` là thời điểm ISO 8601.
+Hệ thống MUST chấp nhận một ngày công chỉ khi: `jobId` là chuỗi 1 đến 64 ký tự; `date` là ngày hợp lệ dạng `"YYYY-MM-DD"`; mỗi loại giờ trong `hours` (x1, x1_5, x2, x2_5, x3) là bội số của 0,5 trong khoảng 0 đến 24; tổng giờ không quá 24; `allowance` là số nguyên won từ 0 đến 100.000.000; `wageSnapshot` là số nguyên won từ 1 đến 1.000.000; `note` (không bắt buộc, mặc định chuỗi rỗng) là chuỗi đã bỏ khoảng trắng hai đầu, tối đa 200 ký tự; `updatedAt` là thời điểm ISO 8601.
+
+#### Scenario: Ghi chú
+
+- **WHEN** gửi ngày công không có `note`, hoặc có `note = "  Ca đêm  "`
+- **THEN** dữ liệu hợp lệ với `note` lần lượt là `""` và `"Ca đêm"`; `note` dài 201 ký tự bị từ chối tại đường dẫn `note`
 
 #### Scenario: Giờ lẻ không phải bội số 0,5
 

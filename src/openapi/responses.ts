@@ -79,6 +79,7 @@ export const WorkDayResponse = z.object({
   hours: HoursSchema,
   allowance: Won,
   wageSnapshot: Won,
+  note: z.string().describe('Ghi chú của người dùng, rỗng nếu không có'),
   updatedAt: IsoDateTime,
   deletedAt: IsoDateTime.nullable(),
   pay: DayPayResponse,
