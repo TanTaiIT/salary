@@ -139,6 +139,7 @@ export const MeResponse = z.object({
   id: z.string(),
   name: z.string(),
   provider: z.enum(['dev', 'apple', 'google', 'kakao']),
+  role: z.enum(['user', 'admin']).describe('Chỉ để app hiện trang quản trị; server luôn kiểm tra quyền ở route admin'),
   firstOpenAt: IsoDateTime,
   settings: UserSettingsResponse.nullable(),
 });

@@ -2775,6 +2775,14 @@
               "kakao"
             ]
           },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "admin"
+            ],
+            "description": "Chỉ để app hiện trang quản trị; server luôn kiểm tra quyền ở route admin"
+          },
           "firstOpenAt": {
             "type": "string",
             "format": "date-time",
@@ -2810,6 +2818,7 @@
           "id",
           "name",
           "provider",
+          "role",
           "firstOpenAt",
           "settings"
         ],

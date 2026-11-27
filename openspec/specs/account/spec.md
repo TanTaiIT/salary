@@ -25,3 +25,12 @@ Tài khoản của người dùng: xóa tài khoản cùng toàn bộ dữ liệ
 
 - **WHEN** gọi `DELETE /v1/me` không có token
 - **THEN** server trả 401 với `error.code = "unauthorized"`
+
+### Requirement: Thông tin tài khoản
+
+`GET /v1/me` MUST trả `{ id, name, provider, role, firstOpenAt, settings }` của người dùng trong token. `role` là `"user"` hoặc `"admin"` (bản ghi thiếu trường này coi là `"user"`); app chỉ dùng nó để hiện trang quản trị, còn quyền thật MUST vẫn được kiểm tra ở từng route admin.
+
+#### Scenario: Người dùng thường
+
+- **WHEN** người dùng không có `users.role` gọi `GET /v1/me`
+- **THEN** server trả 200 với `role = "user"`

@@ -455,6 +455,7 @@ describe('Tích hợp MongoDB', { skip }, () => {
         id: u.id,
         name: 'Test',
         provider: 'dev',
+        role: 'user',
         firstOpenAt: iso('2026-03-01T00:00:00Z'),
         settings: null,
       });

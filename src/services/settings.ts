@@ -35,6 +35,8 @@ export function meToApi(user: UserDoc) {
     id: user._id,
     name: user.name,
     provider: user.provider,
+    // App dùng để hiện trang quản trị; quyền thật vẫn do server kiểm tra ở mỗi route admin
+    role: user.role ?? 'user',
     firstOpenAt: firstSeen.toISOString(),
     settings: settingsToApi(user.settings),
   };
